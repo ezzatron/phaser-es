@@ -8,10 +8,12 @@
   "license": "MIT",
   "bin": "bin/phaser-es",
   "scripts": {
-    "build": "bin/phaser-es lib",
-    "prepare": "bin/phaser-es lib"
+    "build": "bin/phaser-es build",
+    "prepare": "bin/phaser-es build"
   },
   "dependencies": {
-    "minimist": "^1.2.0"
+    "minimist": "^1.2.0",
+    "pn": "^1.1.0",
+    "shell-escape": "^0.2.0"
   }
 }

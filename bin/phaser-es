@@ -5,9 +5,9 @@ const minimist = require('minimist')
 const compile = require('../src')
 
 const {
-  module: moduleId = 'phaser',
-  constraint = '^3',
+  package = 'phaser',
+  'package-version': version,
   _: [outputPath = 'phaser-es'],
 } = argv = minimist(process.argv.slice(2))
 
-compile({moduleId, constraint, outputPath, logger: console}).catch(error => console.error(error))
+compile({package, version, outputPath, logger: console}).catch(error => console.error(error))
