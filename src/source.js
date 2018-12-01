@@ -9,29 +9,34 @@ module.exports = {
 
 async function buildModuleTree (entryPath) {
   const tree = {}
-  const toParse = [[tree, entryPath]]
+  const addChild = (name, child) => { tree[name] = child }
+  const toParse = [[entryPath, addChild]]
   let entry
 
   while (entry = toParse.pop()) {
-    const [tree, entryPath] = entry
+    const [entryPath, addChild] = entry
     const ast = parse(await readFile(entryPath))
 
-    const exports = findExports(ast)
-
-    if (exports.length > 0) tree.children = {}
-
-    exports.forEach(([name, moduleId]) => {
-      const subTree = {moduleId}
-      tree.children[name] = subTree
+    findExports(ast).forEach(([name, moduleId]) => {
+      const branch = {moduleId}
+      addChild(name, branch)
 
       if (!moduleId.startsWith('.')) return
 
       const subEntryPath = require.resolve(moduleId, {paths: [dirname(entryPath)]})
-      toParse.push([subTree, subEntryPath])
+      toParse.push([subEntryPath, createAddChild(branch)])
     })
   }
 
   return tree
+}
+
+function createAddChild (branch) {
+  return function addChild (name, child) {
+    if (!branch.children) branch.children = {}
+
+    branch.children[name] = child
+  }
 }
 
 function findExports (ast) {
