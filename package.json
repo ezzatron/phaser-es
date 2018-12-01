@@ -1,0 +1,17 @@
+{
+  "name": "build-phaser-es",
+  "version": "0.0.0",
+  "description": "Tool for building Phaser with ES2015 modules",
+  "main": "src/index.js",
+  "repository": "ezzatron/phaser-es",
+  "author": "Erin Millard <ezzatron@gmail.com>",
+  "license": "MIT",
+  "bin": "bin/phaser-es",
+  "scripts": {
+    "build": "bin/phaser-es lib",
+    "prepare": "bin/phaser-es lib"
+  },
+  "dependencies": {
+    "minimist": "^1.2.0"
+  }
+}
