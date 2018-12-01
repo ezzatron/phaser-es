@@ -1,12 +1,11 @@
 const glob = require('glob-promise')
-const {generate} = require('astring')
 const {join} = require('path')
 const {mkdir, readFile, writeFile} = require('pn/fs')
 
 const {commandStdout, passthru} = require('./child-process')
 const {generatePackageJson, latestPackageVersion} = require('./npm')
 const {readJsonFile} = require('./fs')
-const {rewriteIndexSource} = require('./source')
+const {buildModuleTree} = require('./source')
 
 const nullLogger = {
   log: () => {},
@@ -35,10 +34,8 @@ module.exports = async function compile (options = {}) {
 
   await passthru({cwd: outputPath}, 'npm', 'install', '--no-package-lock', '--scripts-prepend-node-path')
 
-  const packagePath = join(outputPath, 'node_modules', package)
-  const indexModulePaths = await glob(join(packagePath, '**/index.js'))
+  const nodeModulesPath = join(outputPath, 'node_modules')
+  const tree = await buildModuleTree(require.resolve(package, {paths: [nodeModulesPath]}))
 
-  const ast = rewriteIndexSource(await readFile(indexModulePaths[0]))
-
-  console.log(generate(ast))
+  console.log(tree)
 }

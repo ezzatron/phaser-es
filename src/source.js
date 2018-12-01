@@ -1,71 +1,56 @@
+const {dirname} = require('path')
 const {parse} = require('acorn')
 const {readFile} = require('pn/fs')
 const {simple} = require('acorn-walk')
 
 module.exports = {
-  rewriteIndexSource,
+  buildModuleTree,
 }
 
-function rewriteIndexSource (source) {
-  const original = parse(source)
-  const moduleExports = findModuleExports(original)
+async function buildModuleTree (entryPath) {
+  const tree = {}
+  const toParse = [[tree, entryPath]]
+  let entry
 
-  let match
+  while (entry = toParse.pop()) {
+    const [tree, entryPath] = entry
+    const ast = parse(await readFile(entryPath))
 
-  if (match = findSimpleModuleIndex(moduleExports)) return generateSimpleModuleIndexAst(match)
+    const exports = findExports(ast)
 
-  return original
-}
+    if (exports.length > 0) tree.children = {}
 
-function findSimpleModuleIndex (ast) {
-  if (ast.type !== 'ObjectExpression') return null
+    exports.forEach(([name, moduleId]) => {
+      const subTree = {moduleId}
+      tree.children[name] = subTree
 
-  const index = []
+      if (!moduleId.startsWith('.')) return
 
-  for (const property of ast.properties) {
-    if (property.type !== 'Property') return null
-
-    const {key, value} = property
-
-    if (value.type !== 'CallExpression' || value.callee.name !== 'require' || value.arguments.length < 1) return null
-
-    index.push([key.name, value.arguments[0].value])
+      const subEntryPath = require.resolve(moduleId, {paths: [dirname(entryPath)]})
+      toParse.push([subTree, subEntryPath])
+    })
   }
 
-  return index.length > 0 ? index : null
+  return tree
 }
 
-function generateSimpleModuleIndexAst (index) {
-  const imports = index.map(([key, value]) => ({
-    type: 'ImportDeclaration',
-    specifiers: [{
-      type: 'ImportDefaultSpecifier',
-      local: {type: 'Identifier', name: key},
-    }],
-    source: {type: 'Literal', value},
-  }))
-
-  return {
-    type: 'Program',
-    body: [...imports],
-  }
-}
-
-function findModuleExports (ast) {
-  return findLastAssignmentTo(ast, 'module', 'exports')
-}
-
-function findLastAssignmentTo (ast, object, property) {
-  let result
+function findExports (ast) {
+  const exports = []
 
   simple(ast, {
-    AssignmentExpression (node) {
-      const nodeObject = node.left.object && node.left.object.name
-      const nodeProperty = node.left.property && node.left.property.name
+    Property ({key, value}) {
+      if (!isRequire(value)) return
+      if (key.type !== 'Identifier') return
 
-      if (nodeObject === object && nodeProperty === property) result = node.right
+      exports.push([key.name, value.arguments[0].value])
     },
   })
 
-  return result
+  return exports
+}
+
+function isRequire (node) {
+  const {type, callee, arguments} = node
+
+  return type === 'CallExpression' && callee.name === 'require' && arguments.length > 0
 }
