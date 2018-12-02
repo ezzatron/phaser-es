@@ -1,5 +1,5 @@
 const {generate} = require('astring')
-const {join} = require('path')
+const {dirname, join} = require('path')
 
 module.exports = {
   moduleTreeToFiles,
@@ -7,20 +7,20 @@ module.exports = {
 
 function moduleTreeToFiles (package, tree) {
   const files = {}
-  const toGenerate = [['', join(package, 'src'), tree]]
+  const toGenerate = [['index.js', join(package, 'src'), tree]]
   let entry
 
   while (entry = toGenerate.pop()) {
-    const [basePath, baseModuleId, children] = entry
+    const [filePath, baseModuleId, children] = entry
 
     if (!children) continue
 
     const childEntries = Object.entries(children)
 
-    files[join(basePath, 'index.js')] = generate(buildBranchAst(baseModuleId, childEntries))
+    files[filePath] = generate(buildBranchAst(baseModuleId, childEntries))
 
-    childEntries.forEach(([name, {moduleId, children}]) => {
-      const childPath = join(basePath, moduleId)
+    childEntries.forEach(([name, {path, moduleId, children}]) => {
+      const childPath = join(dirname(filePath), path)
       const childModuleId = join(baseModuleId, moduleId)
 
       toGenerate.push([childPath, childModuleId, children])
