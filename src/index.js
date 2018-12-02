@@ -1,11 +1,12 @@
 const glob = require('glob-promise')
-const {join} = require('path')
+const {dirname, join} = require('path')
 const {mkdir, readFile, writeFile} = require('pn/fs')
 
+const {buildModuleTree} = require('./parse')
 const {commandStdout, passthru} = require('./child-process')
 const {generatePackageJson, latestPackageVersion} = require('./npm')
+const {moduleTreeToFiles} = require('./generate')
 const {readJsonFile} = require('./fs')
-const {buildModuleTree} = require('./source')
 
 const nullLogger = {
   log: () => {},
@@ -36,6 +37,14 @@ module.exports = async function compile (options = {}) {
 
   const nodeModulesPath = join(outputPath, 'node_modules')
   const tree = await buildModuleTree(require.resolve(package, {paths: [nodeModulesPath]}))
+  const files = moduleTreeToFiles(package, tree)
 
-  console.log(tree)
+  const writes = Object.entries(files).map(async ([filePath, source]) => {
+    const finalPath = join(outputPath, filePath)
+
+    await await mkdir(dirname(finalPath), {recursive: true})
+    await writeFile(finalPath, source)
+  })
+
+  await Promise.all(writes)
 }
