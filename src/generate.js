@@ -31,21 +31,37 @@ function moduleTreeToFiles (package, tree) {
 }
 
 function buildBranchAst (baseModuleId, childEntries) {
-  const imports = childEntries.map(([name, {moduleId, children}]) => {
+  const imports = []
+  const exports = []
+
+  childEntries.forEach(([name, {moduleId, children}]) => {
     const childModuleId = children ? moduleId : join(baseModuleId, moduleId)
 
-    return {
+    imports.push({
       type: 'ImportDeclaration',
       specifiers: [{
         type: 'ImportDefaultSpecifier',
         local: {type: 'Identifier', name},
       }],
       source: {type: 'Literal', value: childModuleId},
-    }
+    })
+
+    exports.push({
+      type: 'ExportSpecifier',
+      local: {type: 'Identifier', name},
+      exported: {type: 'Identifier', name},
+    })
   })
 
   return {
     type: 'Program',
-    body: [...imports],
+    body: [
+      ...imports,
+
+      {
+        type: 'ExportNamedDeclaration',
+        specifiers: exports,
+      },
+    ],
   }
 }
