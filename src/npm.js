@@ -21,6 +21,7 @@ async function generatePackageJson (package, version) {
     version,
     repository,
     license,
+    main: 'index.js',
     dependencies: {
       [package]: version,
     },
