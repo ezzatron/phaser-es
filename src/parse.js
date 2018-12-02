@@ -1,4 +1,4 @@
-const {dirname} = require('path')
+const {dirname, relative} = require('path')
 const {parse} = require('acorn')
 const {readFile} = require('pn/fs')
 const {simple} = require('acorn-walk')
@@ -23,7 +23,9 @@ async function buildModuleTree (entryPath) {
 
       if (!moduleId.startsWith('.')) return
 
-      const subEntryPath = require.resolve(moduleId, {paths: [dirname(entryPath)]})
+      const entryDirPath = dirname(entryPath)
+      const subEntryPath = require.resolve(moduleId, {paths: [entryDirPath]})
+      branch.path = relative(entryDirPath, subEntryPath)
       toParse.push([subEntryPath, createAddChild(branch)])
     })
   }
