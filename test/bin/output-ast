@@ -1,0 +1,15 @@
+#!/usr/bin/env node
+
+const {parse} = require('acorn')
+
+const source = `
+import a from './a'
+import b from './b'
+
+export {
+  a,
+  b,
+}
+`
+
+console.log(parse(source, {sourceType: 'module'}))
