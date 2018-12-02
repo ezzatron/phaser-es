@@ -4,7 +4,7 @@ const {parse} = require('acorn')
 
 const source = `
 import a from './a'
-import b from './b'
+import * as b from './b'
 
 export {
   a,

@@ -35,12 +35,13 @@ function buildBranchAst (baseModuleId, childEntries) {
   const exports = []
 
   childEntries.forEach(([name, {moduleId, children}]) => {
+    const specifierType = children ? 'ImportNamespaceSpecifier' : 'ImportDefaultSpecifier'
     const childModuleId = children ? moduleId : join(baseModuleId, moduleId)
 
     imports.push({
       type: 'ImportDeclaration',
       specifiers: [{
-        type: 'ImportDefaultSpecifier',
+        type: specifierType,
         local: {type: 'Identifier', name},
       }],
       source: {type: 'Literal', value: childModuleId},
@@ -53,6 +54,9 @@ function buildBranchAst (baseModuleId, childEntries) {
     })
   })
 
+  imports.sort(importComparator)
+  exports.sort(exportComparator)
+
   return {
     type: 'Program',
     body: [
@@ -64,4 +68,21 @@ function buildBranchAst (baseModuleId, childEntries) {
       },
     ],
   }
+}
+
+function importComparator (a, b) {
+  const aSpecifier = a.specifiers[0]
+  const bSpecifier = b.specifiers[0]
+
+  const isANamespace = aSpecifier.type === 'ImportNamespaceSpecifier'
+  const isBNamespace = bSpecifier.type === 'ImportNamespaceSpecifier'
+
+  if (isANamespace && !isBNamespace) return -1
+  if (isBNamespace && !isANamespace) return 1
+
+  return aSpecifier.local.name.localeCompare(bSpecifier.local.name)
+}
+
+function exportComparator (a, b) {
+  return a.local.name.localeCompare(b.local.name)
 }
